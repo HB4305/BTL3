@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Architecture Canvas — Clinic Triage Assistant</title>
+  <style>
+    :root {
+      --ground: #eef1ed;
+      --paper: #fffdfa;
+      --ink: #172131;
+      --soft: #445064;
+      --muted: #70798a;
+      --line: #d9ded7;
+      --line-strong: #aeb8b4;
+      --amber: #a6620d;
+      --amber-bg: #fff5df;
+      --teal: #126e64;
+      --teal-bg: #eaf7f4;
+      --red: #a83d35;
+      --red-bg: #fff0ed;
+      --navy-bg: #edf2f8;
+      --shadow: 0 20px 55px -32px rgba(20, 32, 47, .55);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--ink);
+      background-color: var(--ground);
+      background-image:
+        linear-gradient(rgba(23, 33, 49, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 33, 49, .045) 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+
+    .page {
+      position: relative;
+      width: min(96vw, calc(94vh * 16 / 9));
+      aspect-ratio: 16 / 9;
+      display: grid;
+      grid-template-rows: 15.5% 1fr 12.5%;
+      gap: 1.25%;
+      padding: 1.6% 1.8% 1.45%;
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      container-type: inline-size;
+    }
+
+    .page::before,
+    .page::after {
+      content: "";
+      position: absolute;
+      width: 1.3%;
+      aspect-ratio: 1;
+      pointer-events: none;
+      border: 2px solid var(--line-strong);
+    }
+
+    .page::before {
+      top: 1.05%;
+      left: 1.05%;
+      border-right: 0;
+      border-bottom: 0;
+    }
+
+    .page::after {
+      right: 1.05%;
+      bottom: 1.05%;
+      border-top: 0;
+      border-left: 0;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.75fr);
+      gap: 2.1%;
+      min-height: 0;
+    }
+
+    .identity {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: .7em;
+      margin-bottom: .45em;
+      color: var(--amber);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 1.05cqw;
+      font-weight: 750;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 2.3em;
+      height: 2px;
+      background: var(--amber);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.65cqw;
+      line-height: 1.02;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      margin-top: .35em;
+      color: var(--soft);
+      font-size: 1.05cqw;
+      font-weight: 600;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      align-items: center;
+      min-width: 0;
+      padding: 1.2% 0 0;
+    }
+
+    .node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 54%;
+      padding: .65em .55em;
+      text-align: center;
+      color: var(--soft);
+      background: var(--navy-bg);
+      border: 1px solid #cbd5df;
+      border-radius: .55em;
+      font-size: .9cqw;
+      font-weight: 700;
+      line-height: 1.18;
+    }
+
+    .node + .node { margin-left: 15%; }
+    .node + .node::before {
+      content: "→";
+      position: absolute;
+      right: calc(100% + .45em);
+      color: var(--amber);
+      font-size: 1.35em;
+    }
+
+    .node.safety { color: var(--red); background: var(--red-bg); border-color: #e8bdb6; }
+    .node.agent { color: var(--teal); background: var(--teal-bg); border-color: #b6dcd5; }
+    .node.human { color: var(--amber); background: var(--amber-bg); border-color: #e7c991; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: .92fr 1.08fr 1.06fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 1.35%;
+      min-height: 0;
+    }
+
+    .panel {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      padding: 3.2% 3.5%;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid var(--line);
+      border-radius: .55em;
+    }
+
+    .panel h2 {
+      display: flex;
+      align-items: baseline;
+      gap: .5em;
+      margin: 0 0 .55em;
+      font-size: 1.25cqw;
+      line-height: 1.1;
+      letter-spacing: -.015em;
+    }
+
+    .num {
+      color: var(--amber);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .88em;
+      letter-spacing: .05em;
+    }
+
+    ul {
+      display: flex;
+      flex-direction: column;
+      gap: .36em;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      position: relative;
+      padding-left: 1.05em;
+      color: var(--soft);
+      font-size: .86cqw;
+      line-height: 1.27;
+    }
+
+    li::before {
+      content: "—";
+      position: absolute;
+      left: 0;
+      color: var(--amber);
+      font-weight: 800;
+    }
+
+    b, strong { color: var(--ink); }
+
+    code {
+      color: var(--teal);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .91em;
+      font-weight: 700;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .38em;
+      margin-bottom: .65em;
+    }
+
+    .chip {
+      padding: .27em .62em;
+      color: var(--teal);
+      background: var(--teal-bg);
+      border: 1px solid #b6dcd5;
+      border-radius: 999px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .76cqw;
+      font-weight: 800;
+    }
+
+    .rights {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5em;
+      margin-bottom: .55em;
+    }
+
+    .right-box {
+      padding: .48em .6em;
+      border-radius: .4em;
+      font-size: .76cqw;
+      line-height: 1.22;
+    }
+
+    .right-box.read { color: var(--teal); background: var(--teal-bg); }
+    .right-box.write { color: var(--amber); background: var(--amber-bg); }
+    .right-box b { display: block; margin-bottom: .15em; color: currentColor; font-family: ui-monospace, monospace; }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .35em;
+      margin: .45em 0 .55em;
+    }
+
+    .metric {
+      padding: .38em .25em;
+      text-align: center;
+      background: var(--navy-bg);
+      border-radius: .35em;
+    }
+
+    .metric b {
+      display: block;
+      color: var(--amber);
+      font-size: 1.08cqw;
+      line-height: 1;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: .58cqw;
+      font-weight: 750;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .alert {
+      border-color: #ecc9c3;
+      background: linear-gradient(135deg, rgba(255, 240, 237, .9), rgba(255, 255, 255, .75));
+    }
+
+    .alert h2, .alert .num { color: var(--red); }
+
+    .durable {
+      display: grid;
+      grid-template-columns: 19% 1fr 17%;
+      align-items: center;
+      gap: 1.5%;
+      min-height: 0;
+      padding: .6% 1.3%;
+      color: var(--ink);
+      background: linear-gradient(135deg, #f7fbfa, #edf8f5);
+      border: 1px solid #b6dcd5;
+      border-radius: .55em;
+    }
+
+    .durable h2 {
+      margin: 0;
+      color: var(--teal);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .9cqw;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    blockquote {
+      margin: 0;
+      font-size: .98cqw;
+      font-weight: 750;
+      line-height: 1.27;
+    }
+
+    .team {
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .7cqw;
+      line-height: 1.45;
+      text-align: right;
+    }
+
+    .footnote {
+      position: absolute;
+      right: 1.9%;
+      bottom: .35%;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .5cqw;
+    }
+
+    @media print {
+      @page { size: A4 landscape; margin: 0; }
+
+      :root {
+        color-scheme: light;
+        --ground: #ffffff;
+        --paper: #ffffff;
+        --ink: #172131;
+        --soft: #445064;
+        --muted: #70798a;
+        --line: #d9ded7;
+        --line-strong: #aeb8b4;
+        --amber: #a6620d;
+        --amber-bg: #fff5df;
+        --teal: #126e64;
+        --teal-bg: #eaf7f4;
+        --red: #a83d35;
+        --red-bg: #fff0ed;
+        --navy-bg: #edf2f8;
+      }
+
+      body { background: #fff; }
+      .page {
+        width: 100vw;
+        height: 56.25vw;
+        max-height: 100vh;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" aria-label="Architecture Canvas cho Clinic Triage Assistant">
+    <header>
+      <div class="identity">
+        <div class="eyebrow">CTT526 · Architecture Canvas</div>
+        <h1>Clinic Triage Assistant</h1>
+        <div class="subtitle">Trợ lý phân loại ban đầu · Safety-first · Human accountable</div>
+      </div>
+      <div class="flow" aria-label="Luồng xử lý chính">
+        <div class="node">Bệnh nhân<br>nhập dữ liệu</div>
+        <div class="node safety">Safety Layer<br>tất định</div>
+        <div class="node agent">Agent<br>ReAct + Tools</div>
+        <div class="node agent">Reflection<br>+ draft</div>
+        <div class="node human">Nhân viên y tế<br>xác nhận</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="panel" aria-labelledby="section-1">
+        <h2 id="section-1"><span class="num">01</span> Hệ thống &amp; mục tiêu</h2>
+        <ul>
+          <li>Đọc triệu chứng, tiền sử và câu trả lời làm rõ.</li>
+          <li>Đề xuất <strong>mức khẩn cấp + bước tiếp theo</strong>.</li>
+          <li>“Done” = draft có cấu trúc, căn cứ, red flag, dữ liệu thiếu.</li>
+          <li><strong>Không chẩn đoán, không thay thế bác sĩ.</strong></li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="section-2">
+        <h2 id="section-2"><span class="num">02</span> Bốn agent patterns</h2>
+        <div class="chips">
+          <span class="chip">ReAct</span>
+          <span class="chip">Tool Use</span>
+          <span class="chip">Reflection</span>
+          <span class="chip">Human-in-the-Loop</span>
+        </div>
+        <ul>
+          <li><b>ReAct:</b> hỏi làm rõ → gọi tool → cập nhật đề xuất.</li>
+          <li><b>Tool Use:</b> dùng hồ sơ và guideline thật, không đoán.</li>
+          <li><b>Reflection:</b> soát thiếu, mâu thuẫn, red flag, căn cứ.</li>
+          <li><b>HITL:</b> con người chốt mọi quyết định lâm sàng.</li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="section-3">
+        <h2 id="section-3"><span class="num">03</span> MCP · Tools &amp; Data</h2>
+        <div class="rights">
+          <div class="right-box read"><b>READ-ONLY</b>FHIR: Patient, Condition, AllergyIntolerance, MedicationStatement, Observation; guideline đã duyệt.</div>
+          <div class="right-box write"><b>APPEND-ONLY</b>DraftTriageRecommendation + AuditEvent; không sửa EHR.</div>
+        </div>
+        <ul>
+          <li>Output: <code>urgency</code>, <code>nextStep</code>, rationale, redFlags, missingInformation, confidenceBand, evidenceReferences.</li>
+          <li><code>EMERGENCY · URGENT · ROUTINE · SELF_CARE</code></li>
+          <li>Thiếu dữ liệu / confidence thấp / tool lỗi → <strong>không hạ mức</strong>, chuyển điều dưỡng.</li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="section-4">
+        <h2 id="section-4"><span class="num">04</span> Giới hạn phi tất định</h2>
+        <ul>
+          <li>Pin model, prompt, schema, temperature, knowledge version.</li>
+          <li>Structured output; test semantic trên ca có nhãn chuyên gia.</li>
+        </ul>
+        <div class="metric-row" aria-label="Ngưỡng chấp nhận">
+          <div class="metric"><b>10×</b><span>rollouts / ca</span></div>
+          <div class="metric"><b>100%</b><span>schema + rules</span></div>
+          <div class="metric"><b>≥98%</b><span>urgent recall</span></div>
+          <div class="metric"><b>≥95%</b><span>agreement</span></div>
+        </div>
+        <ul>
+          <li><b>QA trọng tâm:</b> Safety + Evaluability.</li>
+          <li>Ngưỡng là cổng bài tập, <strong>không phải bằng chứng</strong> phê duyệt y tế.</li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="section-5">
+        <h2 id="section-5"><span class="num">05</span> Guardrails &amp; HITL</h2>
+        <ul>
+          <li><b>Tự động:</b> validate input, red-flag rules, read tools, hỏi làm rõ, tạo draft + audit.</li>
+          <li><b>Cần click:</b> chốt/hạ urgency, ghi EHR, đặt lịch, chuyển tuyến.</li>
+          <li><b>Cấm:</b> chẩn đoán, kê đơn, từ chối chăm sóc, truy cập web công cộng.</li>
+          <li>Least privilege · consent · patient scope · no raw PII in technical log.</li>
+          <li>Prompt injection chỉ là dữ liệu; tool gateway giữ policy độc lập.</li>
+        </ul>
+      </section>
+
+      <section class="panel alert" aria-labelledby="section-6">
+        <h2 id="section-6"><span class="num">06</span> Cái gì hỏng trước?</h2>
+        <ul>
+          <li><b>Failure:</b> diễn đạt mơ hồ / thiếu dữ kiện / khác ngôn ngữ → bỏ sót red flag → xếp mức thấp.</li>
+          <li><b>Ai bị hại:</b> bệnh nhân bị trì hoãn chăm sóc; phòng khám mất an toàn và niềm tin.</li>
+          <li><b>Giảm thiểu:</b> Safety Layer độc lập, câu hỏi bắt buộc, nâng mức khi bất định, nurse escalation.</li>
+          <li><b>Observe:</b> false negative, near miss, override, drift, tool failure, latency.</li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="durable" aria-labelledby="section-7">
+      <h2 id="section-7"><span class="num">07</span> Ranh giới bền vững</h2>
+      <blockquote>Không một đầu ra phi tất định nào được trở thành quyết định lâm sàng cuối cùng nếu chưa đi qua safety rules, quyền tối thiểu và cổng xác nhận của con người.</blockquote>
+      <div class="team">NHÓM 08<br>CHỦ ĐỀ 2 · 2026</div>
+    </section>
+
+    <div class="footnote">OFFLINE · A4 LANDSCAPE · ONE-PAGE CANVAS</div>
+  </main>
+</body>
+</html>
